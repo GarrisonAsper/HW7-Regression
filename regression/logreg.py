@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # (this is already complete!)
 class BaseRegressor():
 
-    def __init__(self, num_feats, learning_rate=0.01, tol=0.001, max_iter=100, batch_size=10):
+    def __init__(self, num_feats, learning_rate=0.001, tol=0.00001, max_iter=1000000, batch_size=100):
 
         # Weights are randomly initialized
         self.W = np.random.randn(num_feats + 1).flatten()
@@ -42,7 +42,7 @@ class BaseRegressor():
 
         # Repeat until convergence or maximum iterations reached
         while prev_update_size > self.tol and iteration < self.max_iter:
-
+            
             # Shuffling the training data for each epoch of training
             shuffle_arr = np.concatenate([X_train, np.expand_dims(y_train, 1)], axis=1)
             np.random.shuffle(shuffle_arr)
@@ -108,7 +108,7 @@ class BaseRegressor():
 # Implement logistic regression as a subclass
 class LogisticRegressor(BaseRegressor):
 
-    def __init__(self, num_feats, learning_rate=0.01, tol=0.001, max_iter=100, batch_size=10):
+    def __init__(self, num_feats, learning_rate=0.001, tol=0.001, max_iter=100, batch_size=10):
         super().__init__(
             num_feats,
             learning_rate=learning_rate,
@@ -129,7 +129,13 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The predicted labels (y_pred) for given X.
         """
-        pass
+        #multiply x by weights to get vector z 
+        z = np.dot(X, self.W)
+
+        #apply vector z to sigmoid to calculate probability
+        y_pred = 1 / (1 + np.exp(-z) )
+
+        return y_pred
     
     def loss_function(self, y_true, y_pred) -> float:
         """
@@ -143,7 +149,14 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The mean loss (a single number).
         """
-        pass
+        #clip y_pred values to avoid certain nasties like dividing by zero
+        epsilon = 1e-15
+        y_pred = np.clip(y_pred, epsilon, 1 - epsilon) 
+
+        #compute binary cross entropy
+        loss = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+
+        return loss
         
     def calculate_gradient(self, y_true, X) -> np.ndarray:
         """
@@ -157,4 +170,13 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             Vector of gradients.
         """
-        pass
+        
+        #make predictions
+        y_pred = self.make_prediction(X)
+
+        #calculating gradient
+        error = y_pred - y_true
+
+        gradient = np.dot(X.T, error) / X.shape[0]
+
+        return gradient
